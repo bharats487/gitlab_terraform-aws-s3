@@ -1,0 +1,132 @@
+image: hashicorp/terraform:1.5.7
+
+variables:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_ADDRESS: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}"
+
+stages:
+  - init
+  - validate
+  - plan
+  - apply
+
+cache:
+  key: "terraform"
+  paths:
+    - ${CI_PROJECT_DIR}/.terraform
+
+# Common job definitions
+.terraform_init: &terraform_init
+  before_script:
+    - cd ${TF_ROOT}
+    - terraform --version
+    - terraform init -backend-config="address=${TF_ADDRESS}" -backend-config="lock_address=${TF_ADDRESS}/lock" -backend-config="unlock_address=${TF_ADDRESS}/lock" -backend-config="username=${CI_PROJECT_ID}" -backend-config="password=${CI_JOB_TOKEN}" -backend-config="lock_method=POST" -backend-config="unlock_method=DELETE" -backend-config="retry_wait_min=5" -reconfigure
+
+# Environment-specific configurations
+.terraform_job: &terraform_job
+  stage: $STAGE
+  script:
+    - cd ${TF_ROOT}
+    - terraform ${TF_COMMAND} ${TF_ARGS}
+  artifacts:
+    when: on_success
+    paths:
+      - ${TF_ROOT}/planfile
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == $ENVIRONMENT_BRANCH
+      when: manual
+      allow_failure: false
+
+# Staging environment jobs
+init:staging:
+  extends: .terraform_job
+  variables:
+    TF_ROOT: "environments/staging"
+    TF_STATE_NAME: "staging"
+    STAGE: "init"
+    TF_COMMAND: "init"
+    TF_ARGS: ""
+    ENVIRONMENT_BRANCH: "staging"
+
+validate:staging:
+  extends: .terraform_job
+  variables:
+    TF_ROOT: "environments/staging"
+    STAGE: "validate"
+    TF_COMMAND: "validate"
+    TF_ARGS: ""
+    ENVIRONMENT_BRANCH: "staging"
+  needs: ["init:staging"]
+
+plan:staging:
+  extends: .terraform_job
+  variables:
+    TF_ROOT: "environments/staging"
+    STAGE: "plan"
+    TF_COMMAND: "plan"
+    TF_ARGS: "-out=planfile"
+    ENVIRONMENT_BRANCH: "staging"
+  needs: ["validate:staging"]
+
+apply:staging:
+  extends: .terraform_job
+  variables:
+    TF_ROOT: "environments/staging"
+    STAGE: "apply"
+    TF_COMMAND: "apply"
+    TF_ARGS: "-auto-approve planfile"
+    ENVIRONMENT_BRANCH: "staging"
+  needs: ["plan:staging"]
+  environment:
+    name: staging
+    url: https://s3.console.aws.amazon.com/s3/buckets/
+
+# Production environment jobs
+init:production:
+  extends: .terraform_job
+  variables:
+    TF_ROOT: "environments/production"
+    TF_STATE_NAME: "production"
+    STAGE: "init"
+    TF_COMMAND: "init"
+    TF_ARGS: ""
+    ENVIRONMENT_BRANCH: "main"
+
+validate:production:
+  extends: .terraform_job
+  variables:
+    TF_ROOT: "environments/production"
+    STAGE: "validate"
+    TF_COMMAND: "validate"
+    TF_ARGS: ""
+    ENVIRONMENT_BRANCH: "main"
+  needs: ["init:production"]
+
+plan:production:
+  extends: .terraform_job
+  variables:
+    TF_ROOT: "environments/production"
+    STAGE: "plan"
+    TF_COMMAND: "plan"
+    TF_ARGS: "-out=planfile"
+    ENVIRONMENT_BRANCH: "main"
+  needs: ["validate:production"]
+
+apply:production:
+  extends: .terraform_job
+  variables:
+    TF_ROOT: "environments/production"
+    STAGE: "apply"
+    TF_COMMAND: "apply"
+    TF_ARGS: "-auto-approve planfile"
+    ENVIRONMENT_BRANCH: "main"
+  needs: ["plan:production"]
+  environment:
+    name: production
+    url: https://s3.console.aws.amazon.com/s3/buckets/
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+      allow_failure: false

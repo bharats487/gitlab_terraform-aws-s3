@@ -1,93 +1,91 @@
-# terraform-aws-s3
+# Terraform AWS S3 Project
 
-Terraform module for managing AWS S3 buckets with GitLab CI/CD
+This project manages AWS S3 buckets using Terraform with GitLab CI/CD pipelines for both staging and production environments.
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/ajeet29/gitlab.git
-git branch -M main
-git push -uf origin main
+.
+├── .gitlab-ci.yml       # GitLab CI/CD configuration
+├── modules/             # Reusable Terraform modules
+│   └── s3_bucket/       # S3 bucket module
+├── environments/        # Environment-specific configurations
+│   ├── staging/         # Staging environment
+│   └── production/      # Production environment
+└── README.md            # This file
 ```
 
-## Integrate with your tools
+## Prerequisites
 
-- [ ] [Set up project integrations](https://gitlab.com/ajeet29/gitlab/-/settings/integrations)
+1. GitLab account with a project created
+2. AWS account with appropriate permissions
+3. Terraform installed locally (for development)
 
-## Collaborate with your team
+## Setup Instructions
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### 1. Configure GitLab CI/CD Variables
 
-## Test and Deploy
+Go to your GitLab project: `Settings` > `CI/CD` > `Variables` and add:
 
-Use the built-in continuous integration in GitLab.
+- `AWS_ACCESS_KEY_ID` - Your AWS access key
+- `AWS_SECRET_ACCESS_KEY` - Your AWS secret key
+- `AWS_DEFAULT_REGION` - AWS region (e.g., us-east-1)
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Mark these variables as `Protected` and `Masked` for security.
 
-***
+### 2. Branch Strategy
 
-# Editing this README
+- `main` branch: Production environment
+- `staging` branch: Staging environment
+- Feature branches: Create from `staging` for development
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### 3. Using the Pipelines
 
-## Suggestions for a good README
+1. **Staging Environment**
+   - Push to `staging` branch
+   - Go to `CI/CD` > `Pipelines`
+   - Run the pipeline manually
+   - Approve each stage (init → validate → plan → apply)
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+2. **Production Environment**
+   - Merge changes to `main` branch
+   - Go to `CI/CD` > `Pipelines`
+   - Run the pipeline manually
+   - Approve each stage (init → validate → plan → apply)
 
-## Name
-Choose a self-explaining name for your project.
+## Development
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Local Development
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+1. Install Terraform (>= 1.0.0)
+2. Configure AWS credentials:
+   ```bash
+   aws configure
+   ```
+3. Initialize Terraform:
+   ```bash
+   cd environments/staging
+   terraform init
+   ```
+4. Plan and apply changes:
+   ```bash
+   terraform plan
+   terraform apply
+   ```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### Adding New Environments
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+1. Create a new directory under `environments/`
+2. Copy and modify the configuration from an existing environment
+3. Update `.gitlab-ci.yml` to include the new environment
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## Security Considerations
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+- Never commit AWS credentials to version control
+- Use IAM roles with least privilege
+- Enable MFA for AWS accounts
+- Regularly rotate access keys
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This project is licensed under the MIT License.
