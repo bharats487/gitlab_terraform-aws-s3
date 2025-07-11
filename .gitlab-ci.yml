@@ -35,7 +35,6 @@ cache:
 
 # Environment-specific configurations
 .terraform_job: &terraform_job
-  stage: $STAGE
   script:
     - cd ${TF_ROOT}
     - terraform ${TF_COMMAND} ${TF_ARGS}
@@ -44,99 +43,115 @@ cache:
     paths:
       - ${TF_ROOT}/planfile
     expire_in: 1 week
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == $ENVIRONMENT_BRANCH
-      when: manual
-      allow_failure: false
 
 # Staging environment jobs
 init:staging:
   extends: .terraform_job
+  stage: init
   variables:
     TF_ROOT: "environments/staging"
     TF_STATE_NAME: "staging"
-    STAGE: "init"
     TF_COMMAND: "init"
     TF_ARGS: ""
-    ENVIRONMENT_BRANCH: "staging"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "staging"'
+      when: manual
+      allow_failure: false
 
 validate:staging:
   extends: .terraform_job
+  stage: validate
   variables:
     TF_ROOT: "environments/staging"
-    STAGE: "validate"
     TF_COMMAND: "validate"
     TF_ARGS: ""
-    ENVIRONMENT_BRANCH: "staging"
   needs: ["init:staging"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "staging"'
+      when: manual
+      allow_failure: false
 
 plan:staging:
   extends: .terraform_job
+  stage: plan
   variables:
     TF_ROOT: "environments/staging"
-    STAGE: "plan"
     TF_COMMAND: "plan"
     TF_ARGS: "-out=planfile"
-    ENVIRONMENT_BRANCH: "staging"
   needs: ["validate:staging"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "staging"'
+      when: manual
+      allow_failure: false
 
 apply:staging:
   extends: .terraform_job
+  stage: apply
   variables:
     TF_ROOT: "environments/staging"
-    STAGE: "apply"
     TF_COMMAND: "apply"
     TF_ARGS: "-auto-approve planfile"
-    ENVIRONMENT_BRANCH: "staging"
   needs: ["plan:staging"]
   environment:
     name: staging
     url: https://s3.console.aws.amazon.com/s3/buckets/
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "staging"'
+      when: manual
+      allow_failure: false
 
 # Production environment jobs
 init:production:
   extends: .terraform_job
+  stage: init
   variables:
     TF_ROOT: "environments/production"
     TF_STATE_NAME: "production"
-    STAGE: "init"
     TF_COMMAND: "init"
     TF_ARGS: ""
-    ENVIRONMENT_BRANCH: "main"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
 
 validate:production:
   extends: .terraform_job
+  stage: validate
   variables:
     TF_ROOT: "environments/production"
-    STAGE: "validate"
     TF_COMMAND: "validate"
     TF_ARGS: ""
-    ENVIRONMENT_BRANCH: "main"
   needs: ["init:production"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
 
 plan:production:
   extends: .terraform_job
+  stage: plan
   variables:
     TF_ROOT: "environments/production"
-    STAGE: "plan"
     TF_COMMAND: "plan"
     TF_ARGS: "-out=planfile"
-    ENVIRONMENT_BRANCH: "main"
   needs: ["validate:production"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
 
 apply:production:
   extends: .terraform_job
+  stage: apply
   variables:
     TF_ROOT: "environments/production"
-    STAGE: "apply"
     TF_COMMAND: "apply"
     TF_ARGS: "-auto-approve planfile"
-    ENVIRONMENT_BRANCH: "main"
   needs: ["plan:production"]
   environment:
     name: production
     url: https://s3.console.aws.amazon.com/s3/buckets/
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
       allow_failure: false
