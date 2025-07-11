@@ -75,13 +75,12 @@ validate:staging:
     TF_ROOT: "environments/staging"
     TF_COMMAND: "validate"
     TF_ARGS: ""
-  needs: ["init:staging"]
+  needs:
+    - job: init:staging
   rules:
     - if: '$CI_COMMIT_BRANCH == "staging"'
       when: manual
       allow_failure: false
-  dependencies:
-    - init:staging
 
 plan:staging:
   extends: .terraform_job
@@ -90,13 +89,12 @@ plan:staging:
     TF_ROOT: "environments/staging"
     TF_COMMAND: "plan"
     TF_ARGS: "-out=planfile"
-  needs: ["validate:staging"]
+  needs:
+    - job: init:staging
   rules:
     - if: '$CI_COMMIT_BRANCH == "staging"'
       when: manual
       allow_failure: false
-  dependencies:
-    - init:staging
 
 apply:staging:
   extends: .terraform_job
@@ -105,7 +103,8 @@ apply:staging:
     TF_ROOT: "environments/staging"
     TF_COMMAND: "apply"
     TF_ARGS: "-auto-approve planfile"
-  needs: ["plan:staging"]
+  needs:
+    - job: init:staging
   environment:
     name: staging
     url: https://s3.console.aws.amazon.com/s3/buckets/
@@ -113,8 +112,6 @@ apply:staging:
     - if: '$CI_COMMIT_BRANCH == "staging"'
       when: manual
       allow_failure: false
-  dependencies:
-    - init:staging
 
 # Production environment jobs
 init:production:
@@ -142,13 +139,12 @@ validate:production:
     TF_ROOT: "environments/production"
     TF_COMMAND: "validate"
     TF_ARGS: ""
-  needs: ["init:production"]
+  needs:
+    - job: init:production
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
       allow_failure: false
-  dependencies:
-    - init:production
 
 plan:production:
   extends: .terraform_job
@@ -157,13 +153,12 @@ plan:production:
     TF_ROOT: "environments/production"
     TF_COMMAND: "plan"
     TF_ARGS: "-out=planfile"
-  needs: ["validate:production"]
+  needs:
+    - job: init:production
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
       allow_failure: false
-  dependencies:
-    - init:production
 
 apply:production:
   extends: .terraform_job
@@ -172,7 +167,8 @@ apply:production:
     TF_ROOT: "environments/production"
     TF_COMMAND: "apply"
     TF_ARGS: "-auto-approve planfile"
-  needs: ["plan:production"]
+  needs:
+    - job: init:production
   environment:
     name: production
     url: https://s3.console.aws.amazon.com/s3/buckets/
@@ -180,5 +176,3 @@ apply:production:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
       allow_failure: false
-  dependencies:
-    - init:production
