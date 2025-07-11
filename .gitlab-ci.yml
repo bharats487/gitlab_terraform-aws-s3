@@ -62,6 +62,11 @@ init:staging:
     - if: '$CI_COMMIT_BRANCH == "staging"'
       when: manual
       allow_failure: false
+  artifacts:
+    paths:
+      - environments/staging/.terraform
+      - environments/staging/.terraform.lock.hcl
+    expire_in: 1 hour
 
 validate:staging:
   extends: .terraform_job
@@ -75,6 +80,8 @@ validate:staging:
     - if: '$CI_COMMIT_BRANCH == "staging"'
       when: manual
       allow_failure: false
+  dependencies:
+    - init:staging
 
 plan:staging:
   extends: .terraform_job
@@ -88,6 +95,8 @@ plan:staging:
     - if: '$CI_COMMIT_BRANCH == "staging"'
       when: manual
       allow_failure: false
+  dependencies:
+    - init:staging
 
 apply:staging:
   extends: .terraform_job
@@ -104,6 +113,8 @@ apply:staging:
     - if: '$CI_COMMIT_BRANCH == "staging"'
       when: manual
       allow_failure: false
+  dependencies:
+    - init:staging
 
 # Production environment jobs
 init:production:
@@ -118,6 +129,11 @@ init:production:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
       allow_failure: false
+  artifacts:
+    paths:
+      - environments/production/.terraform
+      - environments/production/.terraform.lock.hcl
+    expire_in: 1 hour
 
 validate:production:
   extends: .terraform_job
@@ -131,6 +147,8 @@ validate:production:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
       allow_failure: false
+  dependencies:
+    - init:production
 
 plan:production:
   extends: .terraform_job
@@ -144,6 +162,8 @@ plan:production:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
       allow_failure: false
+  dependencies:
+    - init:production
 
 apply:production:
   extends: .terraform_job
@@ -160,3 +180,5 @@ apply:production:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
       allow_failure: false
+  dependencies:
+    - init:production
